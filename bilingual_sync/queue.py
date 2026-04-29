@@ -8,22 +8,34 @@ Workflow:
 
 Markdown format is hand-editable but parseable. Each item is delimited by
 a `## key` header so the parser can chunk reliably.
+
+v0.2: directory layout + filename + frontmatter handled by
+solo_founder_os.HitlQueue. This module owns the agent-specific schema:
+how a ReviewBundle becomes markdown, and how human-edited markdown
+becomes back-parsed TranslationItems.
 """
 from __future__ import annotations
-import os
 import pathlib
 import re
 from datetime import datetime, timezone
-from typing import Iterable
+
+from solo_founder_os.hitl_queue import HitlQueue
 
 from .types import TranslationItem, ReviewBundle
 
 
+DEFAULT_QUEUE_ROOT = (pathlib.Path.home()
+                     / ".bilingual-content-sync-agent" / "queue")
+
+
+def _queue() -> HitlQueue:
+    """Build a HitlQueue honoring the legacy BILINGUAL_QUEUE env var."""
+    return HitlQueue.from_env("BILINGUAL_QUEUE", default=DEFAULT_QUEUE_ROOT)
+
+
 def _queue_root() -> pathlib.Path:
-    return pathlib.Path(os.getenv(
-        "BILINGUAL_QUEUE",
-        str(pathlib.Path.home() / ".bilingual-content-sync-agent" / "queue"),
-    ))
+    """Legacy accessor — returns the resolved queue root for tests/applier."""
+    return _queue().root
 
 
 # Header line for each item: "## <key>"
@@ -56,10 +68,8 @@ def _render_item(it: TranslationItem) -> str:
 def write_review(bundle: ReviewBundle, *,
                  status: str = "pending") -> pathlib.Path:
     """Write the bundle as one markdown file under queue/<status>/."""
-    root = _queue_root() / status
-    root.mkdir(parents=True, exist_ok=True)
-    ts = (bundle.drafted_at or datetime.utcnow()).strftime("%Y%m%dT%H%M%S")
-    path = root / f"{ts}-review.md"
+    ts = bundle.drafted_at or datetime.now(timezone.utc)
+    basename = f"{ts.strftime('%Y%m%dT%H%M%S')}-review.md"
 
     head = [
         "---",
@@ -80,15 +90,12 @@ def write_review(bundle: ReviewBundle, *,
         "",
     ]
     body = [_render_item(it) for it in bundle.items]
-    path.write_text("\n".join(head) + "\n".join(body), encoding="utf-8")
-    return path
+    content = "\n".join(head) + "\n".join(body)
+    return _queue().write(basename, content, status=status)
 
 
 def list_queue(*, status: str = "pending") -> list[pathlib.Path]:
-    root = _queue_root() / status
-    if not root.exists():
-        return []
-    return sorted(root.glob("*.md"))
+    return _queue().list(status=status)
 
 
 # Regex to chunk by `## <key>` header. The key can contain dots, dashes,

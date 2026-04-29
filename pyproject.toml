@@ -1,6 +1,6 @@
 [project]
 name = "bilingual-content-sync-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "Solo Founder OS agent #4 — keep EN/ZH locale JSON in sync via Claude + HITL markdown review."
 authors = [{ name = "Alex Ji", email = "alex@vibexforge.com" }]
 license = { text = "MIT" }
@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "anthropic>=0.40",
-    "solo-founder-os>=0.1.0",
+    "solo-founder-os>=0.2.0",
 ]
 
 [project.optional-dependencies]

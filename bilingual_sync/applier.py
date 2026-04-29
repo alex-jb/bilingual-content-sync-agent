@@ -15,10 +15,9 @@ so it doesn't apply twice. (Disabled with `--keep-queue`.)
 from __future__ import annotations
 import json
 import pathlib
-from datetime import datetime, timezone
 
 from .i18n_diff import flatten, unflatten, load_locale
-from .queue import _queue_root, parse_review_file
+from .queue import _queue, parse_review_file
 from .types import TranslationItem
 
 
@@ -36,10 +35,7 @@ def apply_approved(*,
     """
     en_path = pathlib.Path(en_path)
     zh_path = pathlib.Path(zh_path)
-    root = _queue_root()
-    approved_dir = root / "approved"
-    sent_dir = root / "sent"
-    sent_dir.mkdir(parents=True, exist_ok=True)
+    q = _queue()
 
     summary = {
         "applied": 0,
@@ -48,7 +44,8 @@ def apply_approved(*,
         "files_processed": 0,
     }
 
-    if not approved_dir.exists():
+    approved_paths = q.list(status=q.APPROVED)
+    if not approved_paths:
         return summary
 
     en = load_locale(en_path)
@@ -56,7 +53,7 @@ def apply_approved(*,
     en_flat = flatten(en)
     zh_flat = flatten(zh)
 
-    for review_path in sorted(approved_dir.glob("*.md")):
+    for review_path in approved_paths:
         items = parse_review_file(review_path)
         for it in items:
             if not it.zh_approved or not it.zh_approved.strip():
@@ -70,10 +67,8 @@ def apply_approved(*,
 
         summary["files_processed"] += 1
         if not dry_run and not keep_queue:
-            ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-            new_path = sent_dir / f"{ts}-{review_path.name}"
             try:
-                review_path.rename(new_path)
+                q.move(review_path, to=q.SENT)
             except Exception:
                 pass
 
