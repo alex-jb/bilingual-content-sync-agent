@@ -1,0 +1,33 @@
+[project]
+name = "bilingual-content-sync-agent"
+version = "0.1.0"
+description = "Solo Founder OS agent #4 — keep EN/ZH locale JSON in sync via Claude + HITL markdown review."
+authors = [{ name = "Alex Ji", email = "alex@vibexforge.com" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "anthropic>=0.40",
+    "solo-founder-os>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+bilingual-sync = "bilingual_sync.__main__:main"
+bilingual-content-sync-agent = "bilingual_sync.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/alex-jb/bilingual-content-sync-agent"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["bilingual_sync"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

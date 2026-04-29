@@ -1,0 +1,9 @@
+{
+  "auth": {
+    "login_button": "Login",
+    "signup_button": "Sign up",
+    "reset_button": "Reset password"
+  },
+  "save": "Save",
+  "cancel": "Cancel"
+}
