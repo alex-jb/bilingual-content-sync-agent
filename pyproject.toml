@@ -11,6 +11,20 @@ dependencies = [
     "solo-founder-os>=0.2.0",
 ]
 
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Internationalization",
+]
+keywords = ["i18n", "localization", "translation", "claude", "indie"]
+
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
@@ -19,6 +33,8 @@ bilingual-sync = "bilingual_sync.__main__:main"
 bilingual-content-sync-agent = "bilingual_sync.__main__:main"
 
 [project.urls]
+Repository = "https://github.com/alex-jb/bilingual-content-sync-agent"
+Issues = "https://github.com/alex-jb/bilingual-content-sync-agent/issues"
 Homepage = "https://github.com/alex-jb/bilingual-content-sync-agent"
 
 [build-system]

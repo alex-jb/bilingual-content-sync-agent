@@ -5,6 +5,7 @@
 > Solo Founder OS agent #4 — keep `en.json` and `zh.json` (or any locale pair) in sync. Diffs, translates missing keys via Claude, queues them in a markdown HITL review file, applies approved edits back to your locale JSON. Never auto-writes without human approval.
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/bilingual-content-sync-agent.svg)](https://pypi.org/project/bilingual-content-sync-agent/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](#)
 [![Model](https://img.shields.io/badge/Claude-Sonnet_4.6-D97706?logoColor=white)](https://anthropic.com)
 

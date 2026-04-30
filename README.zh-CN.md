@@ -5,6 +5,7 @@
 > Solo Founder OS 第 4 个 agent —— 让 `en.json` 和 `zh.json`(或任何语言对)保持同步。Diff 找出缺的、Claude 翻译、写入 markdown HITL review 文件、批准后写回 locale JSON。**永远不自动写**。
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/bilingual-content-sync-agent.svg)](https://pypi.org/project/bilingual-content-sync-agent/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](#)
 [![Model](https://img.shields.io/badge/Claude-Sonnet_4.6-D97706?logoColor=white)](https://anthropic.com)
 
