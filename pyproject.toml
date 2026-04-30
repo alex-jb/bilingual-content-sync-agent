@@ -1,6 +1,6 @@
 [project]
 name = "bilingual-content-sync-agent"
-version = "0.3.0"
+version = "0.4.0"
 description = "Solo Founder OS agent #4 — keep EN/ZH locale JSON in sync via Claude + HITL markdown review."
 authors = [{ name = "Alex Ji", email = "alex@vibexforge.com" }]
 license = { text = "MIT" }
@@ -26,11 +26,13 @@ classifiers = [
 keywords = ["i18n", "localization", "translation", "claude", "indie"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+mcp = ["mcp>=1.0"]
+dev = ["pytest>=8.0", "mcp>=1.0"]
 
 [project.scripts]
 bilingual-sync = "bilingual_sync.__main__:main"
 bilingual-content-sync-agent = "bilingual_sync.__main__:main"
+bilingual-sync-mcp = "bilingual_sync.mcp_server:main"
 
 [project.urls]
 Repository = "https://github.com/alex-jb/bilingual-content-sync-agent"

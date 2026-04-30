@@ -86,6 +86,27 @@ bilingual-sync apply --en locales/en.json --zh locales/zh.json
 - [ ] **v0.4** —— Context 预览:显示某 key 出现在哪个 React 组件
 - [ ] **v0.5** —— 反向同步:检测 ZH-only 的孤儿 key(功能下线但 ZH 没删干净)
 
+## MCP server(Claude Desktop / Cursor / Zed)
+
+让 AI 助手直接帮你翻译缺失的 i18n 键。
+
+```bash
+pip install 'bilingual-content-sync-agent[mcp]'
+```
+
+```json
+{
+  "mcpServers": {
+    "bilingual-sync": {
+      "command": "bilingual-sync-mcp",
+      "env": { "ANTHROPIC_API_KEY": "..." }
+    }
+  }
+}
+```
+
+工具:`diff_locales(en, zh)` · `translate_missing(en, zh, ...)` · `apply_approved(en, zh)`
+
 ## 协议
 
 MIT。

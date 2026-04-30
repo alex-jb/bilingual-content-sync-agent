@@ -86,6 +86,27 @@ A key is missing in ZH when ANY of:
 - [ ] **v0.4** — In-context preview: show the React component a key appears in
 - [ ] **v0.5** — Reverse sync: detect ZH-only orphan keys (features that got removed but ZH was forgotten)
 
+## MCP server (Claude Desktop / Cursor / Zed)
+
+Translate missing i18n keys inline from your AI assistant.
+
+```bash
+pip install 'bilingual-content-sync-agent[mcp]'
+```
+
+```json
+{
+  "mcpServers": {
+    "bilingual-sync": {
+      "command": "bilingual-sync-mcp",
+      "env": { "ANTHROPIC_API_KEY": "..." }
+    }
+  }
+}
+```
+
+Tools: `diff_locales(en, zh)` · `translate_missing(en, zh, ...)` · `apply_approved(en, zh)`
+
 ## License
 
 MIT.
