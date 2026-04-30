@@ -21,7 +21,7 @@ NEVER auto-writes to zh.json without human approval.
 Built on solo-founder-os: AnthropicClient (auto cost log → cost-audit),
 HITL markdown queue (mirrors vc-outreach-agent pattern).
 """
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 from .types import TranslationItem, ReviewBundle
 from .i18n_diff import load_locale, find_missing, flatten, unflatten

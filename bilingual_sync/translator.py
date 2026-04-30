@@ -91,6 +91,27 @@ def _build_user_payload(items: list[TranslationItem]) -> str:
     return "\n".join(lines)
 
 
+TRANSLATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "translations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": {"type": "string"},
+                    "zh": {"type": "string"},
+                },
+                "required": ["key", "zh"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["translations"],
+    "additionalProperties": False,
+}
+
+
 def translate_batch(items: list[TranslationItem],
                     *, model: str = DEFAULT_MODEL,
                     glossary: dict[str, str] | None = None,
@@ -100,6 +121,10 @@ def translate_batch(items: list[TranslationItem],
     where each item.zh_proposed is set (or left empty on fallback).
 
     `client` is injectable for tests.
+
+    v0.3: uses solo_founder_os.messages_create_json — guaranteed valid
+    JSON output. Eliminates the markdown-fence-stripping +
+    json.loads-with-fallback path that v0.2 had.
     """
     bundle = ReviewBundle(items=list(items),
                           drafted_at=datetime.now(timezone.utc))
@@ -118,7 +143,8 @@ def translate_batch(items: list[TranslationItem],
     system = build_system_prompt(glossary=glossary, tone_notes=tone_notes)
     user_payload = _build_user_payload(bundle.items)
 
-    resp, err = client.messages_create(
+    data, err = client.messages_create_json(
+        schema=TRANSLATION_SCHEMA,
         model=model,
         max_tokens=4000,
         system=system,
@@ -130,23 +156,8 @@ def translate_batch(items: list[TranslationItem],
         bundle.raw_response = f"(error: {err})"
         return bundle
 
-    text = AnthropicClient.extract_text(resp)
-    bundle.raw_response = text
-
-    # Strip ```json fences if present
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-        cleaned = re.sub(r"\s*```\s*$", "", cleaned).strip()
-
-    try:
-        data = json.loads(cleaned)
-        translations = data.get("translations", [])
-    except Exception:
-        for it in bundle.items:
-            it.notes = "(unparseable LLM response, fill manually)"
-        return bundle
-
+    bundle.raw_response = json.dumps(data, ensure_ascii=False)
+    translations = data.get("translations", [])
     by_key = {t.get("key"): t.get("zh", "") for t in translations
               if isinstance(t, dict)}
     for it in bundle.items:
@@ -155,6 +166,114 @@ def translate_batch(items: list[TranslationItem],
             it.zh_proposed = proposed
         else:
             it.notes = "(LLM didn't return this key, fill manually)"
+    return bundle
+
+
+def translate_via_batch_api(items: list[TranslationItem],
+                             *, model: str = DEFAULT_MODEL,
+                             glossary: dict[str, str] | None = None,
+                             tone_notes: str = "",
+                             chunk_size: int = BATCH_SIZE,
+                             client: AnthropicClient | None = None,
+                             poll_interval_s: float = 30.0,
+                             timeout_s: float = 3600.0) -> ReviewBundle:
+    """Translate a (large) list of items via Anthropic's Message Batches
+    API — 50% off vs realtime, finishes in <1h typical.
+
+    Use this for bulk one-shots like a full-catalog refresh of vibex's
+    925 EN strings. For interactive ad-hoc translation, prefer
+    translate_in_batches() (realtime).
+
+    Returns the same ReviewBundle shape as translate_batch().
+
+    `chunk_size` controls how many items per batch entry. With chunk_size=50,
+    a 925-key catalog produces 19 batch entries. Each entry runs in
+    parallel on Anthropic's side; total wall time is typically a few
+    minutes regardless of total item count.
+    """
+    from solo_founder_os.batch import (
+        batch_request, batch_submit, batch_wait,
+    )
+
+    bundle = ReviewBundle(items=list(items),
+                          drafted_at=datetime.now(timezone.utc))
+    if not items:
+        return bundle
+
+    if client is None:
+        client = AnthropicClient(usage_log_path=USAGE_LOG_PATH)
+
+    if not client.configured:
+        for it in bundle.items:
+            it.notes = "(no ANTHROPIC_API_KEY — fill manually)"
+        bundle.raw_response = "(template mode — no API key)"
+        return bundle
+
+    system = build_system_prompt(glossary=glossary, tone_notes=tone_notes)
+
+    # Chunk items, build one batch_request per chunk
+    requests: list[dict] = []
+    chunk_to_items: dict[str, list[TranslationItem]] = {}
+    for i in range(0, len(bundle.items), chunk_size):
+        chunk = bundle.items[i:i + chunk_size]
+        cid = f"chunk-{i // chunk_size:04d}"
+        chunk_to_items[cid] = chunk
+        user_payload = _build_user_payload(chunk)
+        requests.append(batch_request(
+            custom_id=cid,
+            model=model,
+            max_tokens=4000,
+            system=system,
+            messages=[{"role": "user", "content": user_payload}],
+            extra_headers={"anthropic-beta": "structured-outputs-2025-11-13"},
+            output_config={"format": {"type": "json_schema",
+                                       "schema": TRANSLATION_SCHEMA}},
+        ))
+
+    batch_id, err = batch_submit(client, requests)
+    if err is not None:
+        for it in bundle.items:
+            it.notes = f"(batch submit failed: {err}, fill manually)"
+        bundle.raw_response = f"(batch error: {err})"
+        return bundle
+
+    bundle.raw_response = f"(batch_id: {batch_id})"
+
+    results, err = batch_wait(
+        client, batch_id,
+        poll_interval_s=poll_interval_s,
+        timeout_s=timeout_s,
+    )
+    if err is not None:
+        for it in bundle.items:
+            it.notes = f"(batch wait failed: {err}, fill manually)"
+        return bundle
+
+    # Walk results — each chunk's content[0].text is JSON per the schema
+    for cid, chunk_items in chunk_to_items.items():
+        entry = (results or {}).get(cid)
+        if not entry or "content" not in entry:
+            err_msg = (entry or {}).get("error_message", "missing")
+            for it in chunk_items:
+                it.notes = f"(batch chunk failed: {err_msg}, fill manually)"
+            continue
+        try:
+            text = "".join(b.get("text", "") for b in entry["content"]
+                            if b.get("type") == "text").strip()
+            data = json.loads(text)
+            translations = data.get("translations", [])
+        except Exception as e:
+            for it in chunk_items:
+                it.notes = f"(batch chunk parse error: {e}, fill manually)"
+            continue
+        by_key = {t.get("key"): t.get("zh", "") for t in translations
+                   if isinstance(t, dict)}
+        for it in chunk_items:
+            proposed = by_key.get(it.key, "")
+            if proposed:
+                it.zh_proposed = proposed
+            else:
+                it.notes = "(LLM didn't return this key, fill manually)"
     return bundle
 
 
