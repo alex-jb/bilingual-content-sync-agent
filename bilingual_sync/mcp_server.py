@@ -60,7 +60,7 @@ def diff_locales(en_path: str, zh_path: str) -> str:
     s = coverage_stats(en, zh)
     missing = find_missing(en, zh)
     out = [
-        f"## Coverage",
+        "## Coverage",
         f"- Total EN keys: {s['total_keys']}",
         f"- Covered in ZH: {s['covered_keys']} ({s['coverage_pct']}%)",
         f"- Missing in ZH: {s['missing_keys']}",

@@ -17,7 +17,6 @@ from .applier import apply_approved
 from .i18n_diff import coverage_stats, find_missing, load_locale
 from .queue import write_review
 from .translator import translate_in_batches
-from .types import ReviewBundle
 
 
 def _load_glossary(path: str | None) -> dict[str, str] | None:
@@ -73,7 +72,7 @@ def cmd_draft(args) -> int:
     bundle.zh_path = str(args.zh)
     path = write_review(bundle)
     print(f"\n📄 review: {path}", file=sys.stderr)
-    print(f"   open in Obsidian, edit zh blocks, then move to queue/approved/",
+    print("   open in Obsidian, edit zh blocks, then move to queue/approved/",
           file=sys.stderr)
     print(f"   (run `bilingual-sync apply --en {args.en} --zh {args.zh}` to write back)",
           file=sys.stderr)

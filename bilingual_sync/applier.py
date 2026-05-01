@@ -18,7 +18,6 @@ import pathlib
 
 from .i18n_diff import flatten, unflatten, load_locale
 from .queue import _queue, parse_review_file
-from .types import TranslationItem
 
 
 def apply_approved(*,

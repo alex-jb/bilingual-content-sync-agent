@@ -17,9 +17,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
-import re
 from datetime import datetime, timezone
-from typing import Iterable
 
 from solo_founder_os.anthropic_client import (
     AnthropicClient,
