@@ -152,18 +152,38 @@ def translate_batch(items: list[TranslationItem],
         for it in bundle.items:
             it.notes = f"(LLM error, fill manually: {err})"
         bundle.raw_response = f"(error: {err})"
+        try:
+            from solo_founder_os import log_outcome
+            log_outcome(".bilingual-content-sync-agent", task="translate_batch",
+                        outcome="FAILED",
+                        signal=f"messages_create_json error: {err}")
+        except Exception:
+            pass
         return bundle
 
     bundle.raw_response = json.dumps(data, ensure_ascii=False)
     translations = data.get("translations", [])
     by_key = {t.get("key"): t.get("zh", "") for t in translations
               if isinstance(t, dict)}
+    n_missing = 0
     for it in bundle.items:
         proposed = by_key.get(it.key, "")
         if proposed:
             it.zh_proposed = proposed
         else:
             it.notes = "(LLM didn't return this key, fill manually)"
+            n_missing += 1
+    # Log a partial outcome if Claude skipped any keys — that means our
+    # batch shape or schema isn't communicating clearly enough.
+    if n_missing and n_missing >= max(1, len(bundle.items) // 4):
+        try:
+            from solo_founder_os import log_outcome
+            log_outcome(".bilingual-content-sync-agent", task="translate_batch",
+                        outcome="PARTIAL",
+                        signal=(f"{n_missing}/{len(bundle.items)} keys missing "
+                                "from LLM response"))
+        except Exception:
+            pass
     return bundle
 
 
