@@ -165,11 +165,31 @@ def translate_batch(items: list[TranslationItem],
     translations = data.get("translations", [])
     by_key = {t.get("key"): t.get("zh", "") for t in translations
               if isinstance(t, dict)}
+    # L3 skill library: bulk-record each translated key as an example.
+    # Best-effort import — older solo-founder-os won't have skills module.
+    try:
+        from solo_founder_os import record_example
+    except Exception:
+        record_example = None  # type: ignore[assignment]
     n_missing = 0
     for it in bundle.items:
         proposed = by_key.get(it.key, "")
         if proposed:
             it.zh_proposed = proposed
+            if record_example:
+                try:
+                    record_example(
+                        "translate-en-to-zh",
+                        inputs={
+                            "key": it.key,
+                            "en_value": it.en_value,
+                            "context": it.context,
+                        },
+                        output=proposed,
+                        note="Claude structured-output, pre-HITL",
+                    )
+                except Exception:
+                    pass
         else:
             it.notes = "(LLM didn't return this key, fill manually)"
             n_missing += 1
