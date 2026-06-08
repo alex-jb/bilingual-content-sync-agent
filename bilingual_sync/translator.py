@@ -57,6 +57,12 @@ Rules — break any of these and the translation will be rejected by HITL:
 
 4. Never invent meaning. If the EN is genuinely ambiguous, output the most likely interpretation and add a `(?)` at the end of zh_proposed so HITL flags it.
 
+4b. 2026-06-08 (Aidan Gomez citation pattern adapted): when a translation
+    requires fabricating context the source doesn't carry (e.g. EN "Submit" is
+    too generic — could be 提交/递交/发送 depending on flow), append
+    `[src:none]` to flag that translation has 0 source-language grounding for
+    register choice. HITL reviewer can then add tone_notes for that key.
+
 5. Use the glossary below for any term that appears. Consistency across the app matters more than translating each occurrence creatively.
 
 6. Output STRICT JSON of shape:
