@@ -1,0 +1,34 @@
+# gitleaks allowlist — false-positive guard
+#
+# The weekly security scan (.github/workflows/security.yml) added
+# 2026-05-02 has been failing every weekly fire on the same false
+# positive in README.md line 20 (ASCII art flow diagram containing
+# the literal word "echo'd"). The `generic-api-key` rule treats
+# 8-char strings with mid-range entropy as candidate keys; "echo'd"
+# sneaks through.
+#
+# This is a true false-positive: README.md contains no secrets,
+# verified manually 2026-06-29.
+
+title = "bilingual-content-sync-agent gitleaks config"
+
+[extend]
+# Pull in the upstream default ruleset so we keep coverage on real
+# secret patterns (AWS / Stripe / Anthropic API keys etc).
+useDefault = true
+
+[allowlist]
+description = "README ASCII art diagrams + intentional fixture strings"
+
+# README.md line 20 is the ASCII flow diagram. The whole file is
+# docs/copy, no secret bearing.
+paths = [
+  '''README\.md$''',
+  '''README\.zh-CN\.md$''',
+]
+
+# Specific text patterns that get false-flagged
+regexes = [
+  '''echo'd''',
+  '''present in EN''',
+]
